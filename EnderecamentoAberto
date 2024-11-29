@@ -1,0 +1,136 @@
+#include <stdio.h>
+#include <string.h>
+
+#define TABLE_SIZE 10  // Define o tamanho da tabela hash.
+
+typedef struct {
+    int reservaID;     // Identificador único da reserva.
+    char nome[50];     // Nome do cliente associado à reserva.
+} Reserva;
+
+// Função para inicializar a tabela hash, definindo todas as posições como vazias.
+void inicializarTabela(Reserva tabela[]) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        tabela[i].reservaID = -1;    // ID -1 indica que a posição está vazia.
+        strcpy(tabela[i].nome, ""); // Nome vazio inicial.
+    }
+}
+
+// Função hash que calcula a posição inicial de um elemento com base no ID.
+int funcaoHash(int chave) {
+    return chave % TABLE_SIZE;  // Usa o módulo do tamanho da tabela para calcular o índice.
+}
+
+// Função para inserir uma nova reserva na tabela hash.
+int inserirReserva(Reserva tabela[], int reservaID, const char *nome) {
+    int posicao = funcaoHash(reservaID);  // Calcula a posição inicial usando a função hash.
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        int tentativa = (posicao + i) % TABLE_SIZE;  // Sondagem linear para tratar colisões.
+        if (tabela[tentativa].reservaID == -1) {    // Verifica se a posição está vazia.
+            tabela[tentativa].reservaID = reservaID;  // Insere o ID da reserva.
+            strcpy(tabela[tentativa].nome, nome);     // Insere o nome do cliente.
+            return 1;  // Retorna sucesso.
+        }
+    }
+    return 0;  // Retorna falha se a tabela estiver cheia.
+}
+
+// Função para buscar uma reserva pelo ID na tabela hash.
+int buscarReserva(Reserva tabela[], int reservaID) {
+    int posicao = funcaoHash(reservaID);  // Calcula a posição inicial usando a função hash.
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        int tentativa = (posicao + i) % TABLE_SIZE;  // Sondagem linear para tratar colisões.
+        if (tabela[tentativa].reservaID == reservaID) {  // Verifica se encontrou o ID.
+            return tentativa;  // Retorna a posição da reserva.
+        }
+        if (tabela[tentativa].reservaID == -1) {  // Interrompe a busca se encontrar posição vazia.
+            break;
+        }
+    }
+    return -1;  // Retorna -1 se a reserva não for encontrada.
+}
+
+// Função para excluir uma reserva pelo ID.
+int excluirReserva(Reserva tabela[], int reservaID) {
+    int posicao = buscarReserva(tabela, reservaID);  // Busca a posição da reserva.
+    if (posicao != -1) {  // Verifica se a reserva foi encontrada.
+        tabela[posicao].reservaID = -1;    // Marca a posição como vazia.
+        strcpy(tabela[posicao].nome, ""); // Remove o nome do cliente.
+        return 1;  // Retorna sucesso.
+    }
+    return 0;  // Retorna falha se a reserva não for encontrada.
+}
+
+// Função para exibir todas as reservas da tabela hash.
+void exibirReservas(Reserva tabela[]) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        if (tabela[i].reservaID != -1) {  // Verifica se a posição está ocupada.
+            printf("Mesa %d: Reserva ID %d, Nome: %s\n", i, tabela[i].reservaID, tabela[i].nome);
+        } else {  // Caso contrário, indica que a posição está vazia.
+            printf("Mesa %d: [vazia]\n", i);
+        }
+    }
+}
+
+// Função principal para interação com o sistema.
+int main() {
+    Reserva tabela[TABLE_SIZE];  // Declara a tabela hash.
+    inicializarTabela(tabela);  // Inicializa a tabela.
+
+    int opcao, reservaID;  // Variáveis para controlar o menu e o ID da reserva.
+    char nome[50];         // Variável para armazenar o nome do cliente.
+
+    while (1) {  
+        printf("\nMenu de Reservas:\n");
+        printf("1. Adicionar reserva\n");
+        printf("2. Buscar reserva\n");
+        printf("3. Excluir reserva\n");
+        printf("4. Exibir todas as reservas\n");
+        printf("Escolha uma opção: ");
+        scanf("%d", &opcao);  
+
+        switch (opcao) {  
+        case 1:  // Adicionar uma nova reserva.
+            printf("Digite o ID da reserva: ");
+            scanf("%d", &reservaID);  // Lê o ID da reserva.
+            printf("Digite o nome: ");
+            scanf(" %[^\n]", nome);   // Lê o nome do cliente.
+            if (inserirReserva(tabela, reservaID, nome)) {  // Tenta inserir a reserva.
+                printf("Reserva adicionada com sucesso!\n");
+            } else {
+                printf("Erro: Tabela cheia!\n");  // Mensagem de erro se a tabela estiver cheia.
+            }
+            break;
+
+        case 2:  // Buscar uma reserva pelo ID.
+            printf("Digite o ID da reserva para buscar: ");
+            scanf("%d", &reservaID);  // Lê o ID da reserva.
+            int posicao = buscarReserva(tabela, reservaID);  // Busca a reserva.
+            if (posicao != -1) {
+                printf("Reserva encontrada na mesa %d: Nome: %s\n", posicao, tabela[posicao].nome);
+            } else {
+                printf("Reserva não encontrada.\n");
+            }
+            break;
+
+        case 3:  // Excluir uma reserva pelo ID.
+            printf("Digite o ID da reserva para excluir: ");
+            scanf("%d", &reservaID);  // Lê o ID da reserva.
+            if (excluirReserva(tabela, reservaID)) {  // Tenta excluir a reserva.
+                printf("Reserva excluída com sucesso!\n");
+            } else {
+                printf("Reserva não encontrada.\n");
+            }
+            break;
+
+        case 4:  // Exibir todas as reservas.
+            exibirReservas(tabela);
+            break;
+
+        default:  // Caso o usuário insira uma opção inválida.
+            printf("Opção inválida!\n");
+        }
+    }
+
+    return 0;  // Finaliza o programa (embora o loop seja infinito neste caso).
+}
