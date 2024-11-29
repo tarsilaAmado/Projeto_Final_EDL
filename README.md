@@ -3,5 +3,4 @@ Esse projeto tem como propósito principal implementar dois códigos diferentes 
 
 Um é implementado usando endereçamento aberto e o outro usa endereçamento fechado. Assim, conseguimos explicar de forma prática como essas duas ferramentas se comportam em uma tabela hash.
 
-
-
+# EQUIPE: MARINA DURAND, SALOMÃO PERNAMBUCANO E TARSILA AMADO
