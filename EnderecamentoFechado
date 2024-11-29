@@ -1,0 +1,190 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+#define TABLE_SIZE 10
+
+// estrutura do nó, que guarda o ID da reserva, o nome da pessoa, e tem um ponteiro para o próximo nó, caso aconteça uma colisão.
+typedef struct No {
+    int reservaID;          // Identificação única da reserva
+    char nome[50];          // Nome do cliente
+    struct No *prox;        // Ponteiro para o próximo nó
+} No;
+
+// criei uma estrutura para representar cada posição da tabela hash, que é basicamente uma lista encadeada.
+typedef struct {
+    No *inicio;             
+} Lista;
+
+// Essa função inicializa a tabela hash e ela deixa todas as listas encadeadas "vazias" no começo.
+void inicializarTabela(Lista tabela[]) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        tabela[i].inicio = NULL; // Aponta para NULL, porque ainda não tem reserva
+    }
+}
+
+// Essa é a função da tabela hash que calcula o índice de uma reserva com base no ID
+int funcaoHash(int chave) {
+    return chave % TABLE_SIZE; // O resto da divisão determina em qual índice o ID será armazenado
+}
+
+//função para construir um novo nó
+No* criarNo(int reservaID, const char *nome) {
+    No *novo = (No *)malloc(sizeof(No)); // Aloca memória para o novo nó
+    if (novo) { // Verifica se a memória foi alocada corretamente
+        novo->reservaID = reservaID;     // Preenche o ID
+        strcpy(novo->nome, nome);        // Copia o nome para a estrutura
+        novo->prox = NULL;               // Inicializa o ponteiro como NULL
+    }
+    return novo;
+}
+
+//função de hash para saber em qual mesa colocar, e depois insere o nó no início da lista encadeada
+int inserirReserva(Lista tabela[], int reservaID, const char *nome) {
+    int posicao = funcaoHash(reservaID); // Calcula o índice com a função hash
+    No *atual = tabela[posicao].inicio; // Aponta para o início da lista nessa posição
+
+    // verifica se o ID já existe na lista
+    while (atual) {
+        if (atual->reservaID == reservaID) {
+            return 0; // Se o ID já existe, retorno 0 
+        }
+        atual = atual->prox; 
+    }
+
+    // Se o ID não existe, crio um novo nó
+    No *novo = criarNo(reservaID, nome);
+    if (!novo) return 0; // Se deu erro ao criar o nó, retorno 0
+
+    // Insere o novo nó no início da lista
+    novo->prox = tabela[posicao].inicio;
+    tabela[posicao].inicio = novo;
+
+    return 1;
+}
+
+// função pra buscar uma reserva pelo ID e percorrer a lista encadeada procurando o nó
+No* buscarReserva(Lista tabela[], int reservaID) {
+    int posicao = funcaoHash(reservaID); 
+    No *atual = tabela[posicao].inicio; 
+   
+    while (atual) {
+        if (atual->reservaID == reservaID) {
+            return atual; 
+        }
+        atual = atual->prox; 
+    }
+
+    return NULL; 
+}
+
+//  função para excluir uma reserva, localizo o nó e ajusto os ponteiros da lista --> libero a memória
+int excluirReserva(Lista tabela[], int reservaID) {
+    int posicao = funcaoHash(reservaID); 
+    No *atual = tabela[posicao].inicio; 
+    No *anterior = NULL;              
+
+    // Percorre a lista procurando pelo nó com o ID correspondente
+    while (atual) {
+        if (atual->reservaID == reservaID) {
+            if (anterior) { //se for o primeiro nó:
+                anterior->prox = atual->prox; 
+            } else { //se não for:
+                tabela[posicao].inicio = atual->prox;
+            }
+            free(atual); 
+            return 1;    
+        }
+        anterior = atual;
+        atual = atual->prox;
+    }
+
+    return 0; 
+}
+
+// exibe todas as reservas na tabela 
+void exibirReservas(Lista tabela[]) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        printf("Mesa %d: ", i);
+        No *atual = tabela[i].inicio; 
+
+        if (!atual) {
+            printf("[vazia]"); 
+        } else {
+            while (atual) { 
+                printf("-> [ID: %d, Nome: %s] ", atual->reservaID, atual->nome);
+                atual = atual->prox;
+            }
+        }
+        printf("\n");
+    }
+}
+
+
+int main() {
+    Lista tabela[TABLE_SIZE]; 
+    inicializarTabela(tabela); 
+
+    int opcao, reservaID;
+    char nome[50];
+
+    while (1) {
+       
+        printf("\nMenu de Reservas:\n");
+        printf("1. Adicionar uma reserva\n");
+        printf("2. Buscar por reserva\n");
+        printf("3. Excluir reserva\n");
+        printf("4. Exibir todas as reservas\n");
+        printf("Escolha: ");
+        scanf("%d", &opcao);
+
+        switch (opcao) {
+        case 1:
+            
+            printf("Digite o ID da reserva: ");
+            scanf("%d", &reservaID);
+            printf("Digite o nome: ");
+            scanf(" %[^\n]", nome); // Lê o nome com espaços
+            if (inserirReserva(tabela, reservaID, nome)) {
+                printf("Reserva adicionada com sucesso\n");
+            } else {
+                printf("Erro: ID já existe ou memória insuficiente\n");
+            }
+            break;
+
+        case 2:
+           
+            printf("Digite o ID para buscar: ");
+            scanf("%d", &reservaID);
+            No *encontrado = buscarReserva(tabela, reservaID);
+            if (encontrado) {
+                printf("Reserva encontrada: Nome: %s\n", encontrado->nome);
+            } else {
+                printf("Reserva não encontrada\n");
+            }
+            break;
+
+        case 3:
+           
+            printf("Digite o ID para excluir: ");
+            scanf("%d", &reservaID);
+            if (excluirReserva(tabela, reservaID)) {
+                printf("Reserva excluída\n");
+            } else {
+                printf("Reserva não encontrada\n");
+            }
+            break;
+
+        case 4:
+           
+            exibirReservas(tabela);
+            break;
+
+        default:
+            printf("Opção inválida!\n"); 
+        }
+    }
+
+    return 0; 
+}
